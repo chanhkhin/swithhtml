@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Công tắc thông minh - ERA IoT</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f3efe9;
+    margin: 0;
+    padding: 10px;
+  }
+  .panel {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  }
+  h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: #222;
+    text-align: center;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+  }
+  .gang {
+    flex: 1;
+    text-align: center;
+    border-radius: 10px;
+    background: #f7f7f7;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .rocker {
+    background: #e6e6e6;
+    border-radius: 6px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #bdbdbd;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .on .rocker {
+    background: linear-gradient(180deg, #dff7e6, #c5f0cc);
+  }
+  .on .indicator {
+    background: #19a974;
+    box-shadow: 0 0 6px rgba(25,169,116,0.7);
+  }
+  .label {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #333;
+  }
+</style>
+</head>
+
+<body>
+  <div class="panel">
+    <h3>Công tắc thông minh (ERA IoT)</h3>
+    <div class="row">
+      <div class="gang" id="sw1" onclick="toggleSwitch(1)">
+        <div class="rocker">
+          <div class="indicator"></div>
+          <span>Công tắc 1</span>
+        </div>
+        <div class="label">Tắt</div>
+      </div>
+
+      <div class="gang" id="sw2" onclick="toggleSwitch(2)">
+        <div class="rocker">
+          <div class="indicator"></div>
+          <span>Công tắc 2</span>
+        </div>
+        <div class="label">Tắt</div>
+      </div>
+
+      <div class="gang" id="sw3" onclick="toggleSwitch(3)">
+        <div class="rocker">
+          <div class="indicator"></div>
+          <span>Công tắc 3</span>
+        </div>
+        <div class="label">Tắt</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Cấu hình tên biến thiết bị trên ERA (bạn đổi theo thực tế) =====
+    const DEVICE_ID = "smart_switch";  // ví dụ: tên thiết bị bạn đã khai báo trong ERA
+    const VARS = {
+      1: DEVICE_ID + ".switch1",
+      2: DEVICE_ID + ".switch2",
+      3: DEVICE_ID + ".switch3"
+    };
+
+    // ===== Biến trạng thái nội bộ =====
+    const state = {1:false, 2:false, 3:false};
+
+    // ===== Hàm cập nhật giao diện =====
+    function updateUI(id, val) {
+      const el = document.getElementById("sw" + id);
+      if (!el) return;
+      if (val) {
+        el.classList.add("on");
+        el.querySelector(".label").textContent = "Bật";
+      } else {
+        el.classList.remove("on");
+        el.querySelector(".label").textContent = "Tắt";
+      }
+      state[id] = val;
+    }
+
+    // ===== Hàm bật/tắt khi nhấn =====
+    function toggleSwitch(id) {
+      const newVal = !state[id];
+      updateUI(id, newVal);
+
+      // Nếu có API ERA (điều khiển thiết bị thật)
+      try {
+        ERA.publish(VARS[id], newVal);
+        console.log("Đã gửi tới ERA:", VARS[id], newVal);
+      } catch (e) {
+        console.log("Chế độ demo - không có ERA API. Trạng thái:", VARS[id], newVal);
+      }
+    }
+
+    // ===== Lắng nghe dữ liệu từ ERA khi thiết bị gửi về =====
+    try {
+      Object.keys(VARS).forEach(i => {
+        ERA.subscribe(VARS[i], val => {
+          updateUI(i, val);
+          console.log("ERA cập nhật:", VARS[i], val);
+        });
+      });
+    } catch (e) {
+      console.log("ERA API chưa khả dụng, đang ở chế độ mô phỏng.");
+    }
+  </script>
+</body>
+</html>
